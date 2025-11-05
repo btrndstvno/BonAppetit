@@ -1,0 +1,61 @@
+/* Reset dasar */
+body,
+html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden; /* Sembunyikan scrollbar */
+  background-color: #000;
+}
+
+.camera-container {
+  position: relative;
+  width: 100vw; /* Lebar penuh viewport */
+  height: 100vh; /* Tinggi penuh viewport */
+}
+
+/* Video dan frame dibuat tumpang tindih */
+#video-feed,
+.frame-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+#video-feed {
+  /* Memastikan video mengisi layar tanpa distorsi */
+  object-fit: cover;
+  z-index: 1; /* Video di belakang */
+}
+
+.frame-overlay {
+  /* Pastikan frame tidak terdistorsi */
+  object-fit: contain;
+  z-index: 10; /* Frame di depan */
+  pointer-events: none; /* Biar bisa klik "tembus" frame */
+}
+
+/* Tombol capture */
+#capture-btn {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  padding: 15px 25px;
+  font-size: 16px;
+  font-weight: bold;
+  background-color: #fff;
+  color: #333;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Canvas kita sembunyikan */
+#canvas {
+  display: none;
+}

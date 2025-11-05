@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Frame Bon Appetit</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="camera-container">
+      <video id="video-feed" autoplay playsinline></video>
+
+      <img
+        src="AR_MEJA_NETFLIX_1.png"
+        class="frame-overlay"
+        alt="Frame Twibbon"
+      />
+
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <button id="capture-btn">Ambil Foto</button>
+    <button id="flip-btn">Balik Kamera</button>
+    <a id="download-link" style="display: none"></a>
+
+    <script src="script.js"></script>
+  </body>
+</html>
