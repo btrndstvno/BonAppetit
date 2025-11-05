@@ -11,7 +11,7 @@ let currentStream;
 // Variabel untuk melacak mode kamera (environment = belakang, user = depan)
 let currentFacingMode = "environment"; // Mulai dengan kamera belakang
 
-// 2. Fungsi untuk memulai kamera
+// 2. Fungsi untuk memulai kamera (DIMODIFIKASI)
 async function startCamera(facingMode) {
   if (currentStream) {
     currentStream.getTracks().forEach((track) => {
@@ -29,6 +29,17 @@ async function startCamera(facingMode) {
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     video.srcObject = stream;
     currentStream = stream;
+
+    // --- LOGIKA BARU UNTUK MEMBALIK TAMPILAN ---
+    if (facingMode === 'user') {
+      // Jika kamera depan, tambahkan class untuk 'mirror'
+      video.classList.add('video-is-mirrored');
+    } else {
+      // Jika kamera belakang, hapus class
+      video.classList.remove('video-is-mirrored');
+    }
+    // --- AKHIR LOGIKA BARU ---
+
   } catch (err) {
     console.error("Error mengakses kamera: ", err);
     alert(
@@ -38,7 +49,7 @@ async function startCamera(facingMode) {
 }
 
 // 3. Logika saat tombol "Ambil Foto" diklik
-// --- INI ADALAH BAGIAN YANG DIPERBARUI UNTUK MEMPERBAIKI "GEPENG" ---
+// --- INI ADALAH BAGIAN YANG DIPERBARUI UNTUK MEMBALIK HASIL FOTO ---
 captureBtn.addEventListener("click", () => {
   // Ambil dimensi asli video stream
   const canvasWidth = video.videoWidth;
@@ -50,39 +61,43 @@ captureBtn.addEventListener("click", () => {
 
   const context = canvas.getContext("2d");
 
-  // Gambar video (mengisi seluruh canvas)
-  context.drawImage(video, 0, 0, canvasWidth, canvasHeight);
+  // --- LOGIKA BARU UNTUK MEMBALIK GAMBAR SIMPANAN ---
+  // Simpan state canvas (sebelum dibalik)
+  context.save();
 
-  // --- LOGIKA BARU UNTUK MENGGAMBAR FRAME TANPA GEPENG ---
-  
-  // Dapatkan dimensi asli file frame PNG
-  const frameNaturalWidth = frame.naturalWidth;
-  const frameNaturalHeight = frame.naturalHeight;
-
-  // Hitung rasio aspek
-  const frameRatio = frameNaturalWidth / frameNaturalHeight;
-  const canvasRatio = canvasWidth / canvasHeight;
-
-  let drawWidth = canvasWidth;
-  let drawHeight = canvasHeight;
-  let x = 0;
-  let y = 0;
-
-  // Logika ini meniru 'object-fit: contain'
-  if (frameRatio > canvasRatio) {
-    // Jika frame lebih lebar dari canvas
-    drawHeight = canvasWidth / frameRatio;
-    y = (canvasHeight - drawHeight) / 2; // Pusatkan frame secara vertikal
-  } else {
-    // Jika frame lebih tinggi dari canvas (kasus umum di HP)
-    drawWidth = canvasHeight * frameRatio;
-    x = (canvasWidth - drawWidth) / 2; // Pusatkan frame secara horizontal
+  // Cek jika kita di mode kamera depan
+  if (currentFacingMode === 'user') {
+    // Balik canvas secara horizontal
+    context.translate(canvasWidth, 0);
+    context.scale(-1, 1);
   }
 
-  // Gambar frame di atas video dengan dimensi yang sudah dihitung (tidak akan gepeng)
-  context.drawImage(frame, x, y, drawWidth, drawHeight);
+  // Gambar video (video akan tergambar terbalik/normal sesuai state canvas)
+  context.drawImage(video, 0, 0, canvasWidth, canvasHeight);
 
-  // --- AKHIR DARI LOGIKA BARU ---
+  // Kembalikan state canvas ke normal (agar frame tidak ikut terbalik)
+  context.restore();
+  
+  // --- LOGIKA "COVER" UNTUK FRAME (TETAP SAMA) ---
+  const frameNaturalWidth = frame.naturalWidth;
+  const frameNaturalHeight = frame.naturalHeight;
+  const frameRatio = frameNaturalWidth / frameNaturalHeight;
+  const canvasRatio = canvasWidth / canvasHeight;
+  let drawWidth, drawHeight, x, y;
+  if (frameRatio > canvasRatio) {
+    drawHeight = canvasHeight;
+    drawWidth = canvasHeight * frameRatio;
+    x = (canvasWidth - drawWidth) / 2;
+    y = 0;
+  } else {
+    drawWidth = canvasWidth;
+    drawHeight = canvasWidth / frameRatio;
+    x = 0;
+    y = (canvasHeight - drawHeight) / 2;
+  }
+  
+  // Gambar frame (frame akan tergambar normal, tidak terbalik)
+  context.drawImage(frame, x, y, drawWidth, drawHeight);
 
   // 4. Proses simpan ke galeri (Tetap sama)
   const dataUrl = canvas.toDataURL("image/png");
@@ -93,9 +108,10 @@ captureBtn.addEventListener("click", () => {
 // --- AKHIR DARI BAGIAN YANG DIPERBARUI ---
 
 
-// 4. LOGIKA BARU: Saat tombol "Balik Kamera" diklik
+// 4. Logika saat tombol "Balik Kamera" diklik (DIMODIFIKASI)
 flipBtn.addEventListener("click", () => {
   currentFacingMode = currentFacingMode === "environment" ? "user" : "environment";
+  // Mulai ulang kamera dengan mode baru
   startCamera(currentFacingMode);
 });
 
