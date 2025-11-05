@@ -2,7 +2,7 @@
 const video = document.getElementById("video-feed");
 const canvas = document.getElementById("canvas");
 const captureBtn = document.getElementById("capture-btn");
-const flipBtn = document.getElementById("flip-btn"); // Tombol baru
+const flipBtn = document.getElementById("flip-btn"); // Tombol balik kamera
 const downloadLink = document.getElementById("download-link");
 const frame = document.querySelector(".frame-overlay");
 
@@ -11,28 +11,24 @@ let currentStream;
 // Variabel untuk melacak mode kamera (environment = belakang, user = depan)
 let currentFacingMode = "environment"; // Mulai dengan kamera belakang
 
-// 2. Fungsi untuk memulai kamera (sudah dimodifikasi)
+// 2. Fungsi untuk memulai kamera
 async function startCamera(facingMode) {
-  // Hentikan stream lama jika ada (penting saat membalik kamera)
   if (currentStream) {
     currentStream.getTracks().forEach((track) => {
       track.stop();
     });
   }
-
-  // Set constraints baru
   const constraints = {
     video: {
-      facingMode: { ideal: facingMode }, // Gunakan 'ideal' agar lebih fleksibel
+      facingMode: { ideal: facingMode },
     },
     audio: false,
   };
 
   try {
-    // Minta stream kamera baru
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     video.srcObject = stream;
-    currentStream = stream; // Simpan stream yang sedang aktif
+    currentStream = stream;
   } catch (err) {
     console.error("Error mengakses kamera: ", err);
     alert(
@@ -41,43 +37,65 @@ async function startCamera(facingMode) {
   }
 }
 
-// 3. Logika saat tombol "Ambil Foto" diklik (Tetap sama)
+// 3. Logika saat tombol "Ambil Foto" diklik
+// --- INI ADALAH BAGIAN YANG DIPERBARUI UNTUK MEMPERBAIKI "GEPENG" ---
 captureBtn.addEventListener("click", () => {
-  // Set ukuran canvas sama dengan ukuran video
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
+  // Ambil dimensi asli video stream
+  const canvasWidth = video.videoWidth;
+  const canvasHeight = video.videoHeight;
 
-  // Dapatkan konteks 2D dari canvas
+  // Set ukuran canvas sama dengan resolusi video
+  canvas.width = canvasWidth;
+  canvas.height = canvasHeight;
+
   const context = canvas.getContext("2d");
 
-  // Gambar frame video saat ini ke canvas
-  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  // Gambar video (mengisi seluruh canvas)
+  context.drawImage(video, 0, 0, canvasWidth, canvasHeight);
 
-  // Sekarang, gambar frame PNG di atasnya
-  // Kita menggunakan elemen <img> frame, bukan path file-nya
-  context.drawImage(frame, 0, 0, canvas.width, canvas.height);
+  // --- LOGIKA BARU UNTUK MENGGAMBAR FRAME TANPA GEPENG ---
+  
+  // Dapatkan dimensi asli file frame PNG
+  const frameNaturalWidth = frame.naturalWidth;
+  const frameNaturalHeight = frame.naturalHeight;
 
-  // 4. Proses simpan ke galeri
-  // Ubah data canvas menjadi gambar (data URL)
+  // Hitung rasio aspek
+  const frameRatio = frameNaturalWidth / frameNaturalHeight;
+  const canvasRatio = canvasWidth / canvasHeight;
+
+  let drawWidth = canvasWidth;
+  let drawHeight = canvasHeight;
+  let x = 0;
+  let y = 0;
+
+  // Logika ini meniru 'object-fit: contain'
+  if (frameRatio > canvasRatio) {
+    // Jika frame lebih lebar dari canvas
+    drawHeight = canvasWidth / frameRatio;
+    y = (canvasHeight - drawHeight) / 2; // Pusatkan frame secara vertikal
+  } else {
+    // Jika frame lebih tinggi dari canvas (kasus umum di HP)
+    drawWidth = canvasHeight * frameRatio;
+    x = (canvasWidth - drawWidth) / 2; // Pusatkan frame secara horizontal
+  }
+
+  // Gambar frame di atas video dengan dimensi yang sudah dihitung (tidak akan gepeng)
+  context.drawImage(frame, x, y, drawWidth, drawHeight);
+
+  // --- AKHIR DARI LOGIKA BARU ---
+
+  // 4. Proses simpan ke galeri (Tetap sama)
   const dataUrl = canvas.toDataURL("image/png");
-
-  // Set data URL ke link download
   downloadLink.href = dataUrl;
-
-  // Beri nama file (misal: ospek-foto-timestamp.png)
   downloadLink.download = `frame-foto-${Date.now()}.png`;
-
-  // Klik link download secara otomatis
   downloadLink.click();
 });
+// --- AKHIR DARI BAGIAN YANG DIPERBARUI ---
+
 
 // 4. LOGIKA BARU: Saat tombol "Balik Kamera" diklik
 flipBtn.addEventListener("click", () => {
-  // Ganti mode
-  currentFacingMode =
-    currentFacingMode === "environment" ? "user" : "environment";
-
-  // Mulai ulang kamera dengan mode baru
+  currentFacingMode = currentFacingMode === "environment" ? "user" : "environment";
   startCamera(currentFacingMode);
 });
 
