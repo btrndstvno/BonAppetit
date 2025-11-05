@@ -11,13 +11,15 @@ let currentStream;
 // Variabel untuk melacak mode kamera (environment = belakang, user = depan)
 let currentFacingMode = "environment"; // Mulai dengan kamera belakang
 
-// 2. Fungsi untuk memulai kamera (DIMODIFIKASI)
+// 2. Fungsi untuk memulai kamera (DENGAN FALLBACK YANG DIPERBAIKI)
 async function startCamera(facingMode) {
+  // Hentikan stream lama jika ada
   if (currentStream) {
     currentStream.getTracks().forEach((track) => {
       track.stop();
     });
   }
+
   const constraints = {
     video: {
       facingMode: { ideal: facingMode },
@@ -26,59 +28,70 @@ async function startCamera(facingMode) {
   };
 
   try {
+    // Coba minta kamera yang diinginkan (misal: 'environment')
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     video.srcObject = stream;
     currentStream = stream;
+    currentFacingMode = facingMode; // Simpan mode yang berhasil
 
-    // --- LOGIKA BARU UNTUK MEMBALIK TAMPILAN ---
+    // Atur mirroring
     if (facingMode === 'user') {
-      // Jika kamera depan, tambahkan class untuk 'mirror'
       video.classList.add('video-is-mirrored');
     } else {
-      // Jika kamera belakang, hapus class
       video.classList.remove('video-is-mirrored');
     }
-    // --- AKHIR LOGIKA BARU ---
 
   } catch (err) {
     console.error("Error mengakses kamera: ", err);
-    alert(
-      "Tidak bisa mengakses kamera. Coba ganti ke mode lain atau cek izin browser."
-    );
+
+    // --- LOGIKA FALLBACK (BACKUP PLAN) YANG HILANG ---
+    // Jika kamera yang diminta (misal: 'environment') gagal, coba kamera yang lain ('user')
+    const fallbackFacingMode = (facingMode === 'environment') ? 'user' : 'environment';
+    constraints.video.facingMode = { ideal: fallbackFacingMode };
+
+    try {
+      // Coba lagi dengan kamera fallback
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      video.srcObject = stream;
+      currentStream = stream;
+      currentFacingMode = fallbackFacingMode; // Simpan mode yang berhasil
+
+      // Atur mirroring untuk fallback
+      if (fallbackFacingMode === 'user') {
+        video.classList.add('video-is-mirrored');
+      } else {
+        video.classList.remove('video-is-mirrored');
+      }
+
+    } catch (fallbackErr) {
+      // Jika keduanya gagal, baru tampilkan error
+      console.error("Error mengakses kamera fallback: ", fallbackErr);
+      alert(
+        "Tidak bisa mengakses kamera. Cek izin browser Anda."
+      );
+    }
+    // --- AKHIR LOGIKA FALLBACK ---
   }
 }
 
-// 3. Logika saat tombol "Ambil Foto" diklik
-// --- INI ADALAH BAGIAN YANG DIPERBARUI UNTUK MEMBALIK HASIL FOTO ---
+// 3. Logika saat tombol "Ambil Foto" diklik (Tetap sama, sudah 'cover')
 captureBtn.addEventListener("click", () => {
-  // Ambil dimensi asli video stream
   const canvasWidth = video.videoWidth;
   const canvasHeight = video.videoHeight;
-
-  // Set ukuran canvas sama dengan resolusi video
   canvas.width = canvasWidth;
   canvas.height = canvasHeight;
-
   const context = canvas.getContext("2d");
 
-  // --- LOGIKA BARU UNTUK MEMBALIK GAMBAR SIMPANAN ---
-  // Simpan state canvas (sebelum dibalik)
+  // Logika mirroring saat simpan
   context.save();
-
-  // Cek jika kita di mode kamera depan
   if (currentFacingMode === 'user') {
-    // Balik canvas secara horizontal
     context.translate(canvasWidth, 0);
     context.scale(-1, 1);
   }
-
-  // Gambar video (video akan tergambar terbalik/normal sesuai state canvas)
   context.drawImage(video, 0, 0, canvasWidth, canvasHeight);
-
-  // Kembalikan state canvas ke normal (agar frame tidak ikut terbalik)
-  context.restore();
+  context.restore(); // Kembalikan canvas agar frame tidak terbalik
   
-  // --- LOGIKA "COVER" UNTUK FRAME (TETAP SAMA) ---
+  // Logika 'cover' untuk frame
   const frameNaturalWidth = frame.naturalWidth;
   const frameNaturalHeight = frame.naturalHeight;
   const frameRatio = frameNaturalWidth / frameNaturalHeight;
@@ -95,25 +108,22 @@ captureBtn.addEventListener("click", () => {
     x = 0;
     y = (canvasHeight - drawHeight) / 2;
   }
-  
-  // Gambar frame (frame akan tergambar normal, tidak terbalik)
   context.drawImage(frame, x, y, drawWidth, drawHeight);
 
-  // 4. Proses simpan ke galeri (Tetap sama)
+  // Proses simpan
   const dataUrl = canvas.toDataURL("image/png");
   downloadLink.href = dataUrl;
   downloadLink.download = `frame-foto-${Date.now()}.png`;
   downloadLink.click();
 });
-// --- AKHIR DARI BAGIAN YANG DIPERBARUI ---
 
-
-// 4. Logika saat tombol "Balik Kamera" diklik (DIMODIFIKASI)
+// 4. Logika saat tombol "Balik Kamera" diklik
 flipBtn.addEventListener("click", () => {
-  currentFacingMode = currentFacingMode === "environment" ? "user" : "environment";
-  // Mulai ulang kamera dengan mode baru
-  startCamera(currentFacingMode);
+  // Langsung ganti ke mode sebaliknya dari yang SEKARANG AKTIF
+  const newFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
+  startCamera(newFacingMode);
 });
 
 // 5. Jalankan kamera saat halaman dimuat pertama kali
-startCamera(currentFacingMode);
+// Mulai dengan 'environment' (belakang), tapi jika gagal, fungsi akan otomatis coba 'user'
+startCamera("environment");
