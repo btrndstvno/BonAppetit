@@ -2,8 +2,8 @@
 const video = document.getElementById("video-feed");
 const canvas = document.getElementById("canvas");
 const captureBtn = document.getElementById("capture-btn");
-const flipBtn = document.getElementById("flip-btn"); // Boleh null jika tombol tidak ada
-const downloadLink = document.getElementById("download-link"); // Sekarang akan ditemukan
+const flipBtn = document.getElementById("flip-btn");
+const downloadLink = document.getElementById("download-link");
 const frame = document.querySelector(".frame-overlay");
 
 // Variabel untuk menyimpan stream kamera saat ini
@@ -29,7 +29,7 @@ async function startCamera(facingMode) {
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     video.srcObject = stream;
     currentStream = stream;
-    currentFacingMode = facingMode; // Simpan mode yang berhasil
+    currentFacingMode = facingMode;
     if (facingMode === 'user') {
       video.classList.add('video-is-mirrored');
     } else {
@@ -37,14 +37,13 @@ async function startCamera(facingMode) {
     }
   } catch (err) {
     console.error("Gagal mengakses kamera utama: ", err);
-    // --- LOGIKA FALLBACK (BACKUP PLAN) ---
     const fallbackFacingMode = (facingMode === 'environment') ? 'user' : 'environment';
     constraints.video.facingMode = { ideal: fallbackFacingMode };
     try {
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       video.srcObject = stream;
       currentStream = stream;
-      currentFacingMode = fallbackFacingMode; // Simpan mode yang berhasil
+      currentFacingMode = fallbackFacingMode;
       if (fallbackFacingMode === 'user') {
         video.classList.add('video-is-mirrored');
       } else {
@@ -67,48 +66,59 @@ if (captureBtn) {
       return; 
     }
     
-    // --- INI LOGIKA BARU UNTUK 'CONTAIN' (FRAME UTUH) ---
-    const canvasWidth = video.videoWidth;
-    const canvasHeight = video.videoHeight;
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
+    // --- INI LOGIKA BARU UNTUK MENGHASILKAN GAMBAR TANPA BAR HITAM ---
+    // Ukuran akhir gambar adalah ukuran frame itu sendiri
+    const outputWidth = frame.naturalWidth;
+    const outputHeight = frame.naturalHeight;
+
+    canvas.width = outputWidth;
+    canvas.height = outputHeight;
     const context = canvas.getContext("2d");
 
-    // Logika mirroring
+    // --- Pertama, gambar video ke canvas agar sesuai dengan frame (object-fit: cover) ---
+    const videoRatio = video.videoWidth / video.videoHeight;
+    const outputRatio = outputWidth / outputHeight;
+
+    let videoDrawWidth, videoDrawHeight, videoDrawX, videoDrawY;
+
+    if (videoRatio > outputRatio) {
+      // Video lebih lebar dari output canvas, pangkas samping
+      videoDrawHeight = outputHeight;
+      videoDrawWidth = outputHeight * videoRatio;
+      videoDrawX = (outputWidth - videoDrawWidth) / 2;
+      videoDrawY = 0;
+    } else {
+      // Video lebih tinggi dari output canvas, pangkas atas/bawah
+      videoDrawWidth = outputWidth;
+      videoDrawHeight = outputWidth / videoRatio;
+      videoDrawX = 0;
+      videoDrawY = (outputHeight - videoDrawHeight) / 2;
+    }
+
+    // Logika mirroring saat menggambar video
     context.save();
     if (currentFacingMode === 'user') {
-      context.translate(canvasWidth, 0);
+      context.translate(outputWidth, 0);
       context.scale(-1, 1);
     }
-    context.drawImage(video, 0, 0, canvasWidth, canvasHeight);
-    context.restore(); 
-    
-    // Logika 'contain' untuk frame (frame utuh, tidak gepeng)
-    const frameNaturalWidth = frame.naturalWidth;
-    const frameNaturalHeight = frame.naturalHeight;
-    const frameRatio = frameNaturalWidth / frameNaturalHeight;
-    const canvasRatio = canvasWidth / canvasHeight;
-    let drawWidth = canvasWidth;
-    let drawHeight = canvasHeight;
-    let x = 0;
-    let y = 0;
+    context.drawImage(video, videoDrawX, videoDrawY, videoDrawWidth, videoDrawHeight);
+    context.restore(); // Kembalikan canvas agar frame tidak terbalik
 
-    if (frameRatio > canvasRatio) {
-      drawHeight = canvasWidth / frameRatio;
-      y = (canvasHeight - drawHeight) / 2;
-    } else {
-      drawWidth = canvasHeight * frameRatio;
-      x = (canvasWidth - drawWidth) / 2;
-    }
-    // Gambar frame di atas video
-    context.drawImage(frame, x, y, drawWidth, drawHeight);
-    // --- AKHIR LOGIKA 'CONTAIN' ---
+    // --- Kedua, gambar frame di atasnya (pas ke ukuran output) ---
+    context.drawImage(frame, 0, 0, outputWidth, outputHeight);
+    // --- AKHIR LOGIKA BARU ---
 
-    // Proses simpan (Sekarang akan berhasil karena downloadLink ada)
+    // Proses simpan
     const dataUrl = canvas.toDataURL("image/png");
-    downloadLink.href = dataUrl;
-    downloadLink.download = `frame-foto-${Date.now()}.png`;
-    downloadLink.click();
+    
+    if (downloadLink) {
+        downloadLink.href = dataUrl;
+        downloadLink.download = `frame-foto-${Date.now()}.png`;
+        downloadLink.click();
+    } else {
+        console.error("Elemen Download Link tidak ditemukan!");
+        alert("Terjadi error, link download tidak ditemukan.");
+    }
   });
 } else {
   console.error("Tombol Capture (#capture-btn) tidak ditemukan!");
