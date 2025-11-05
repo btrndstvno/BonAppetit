@@ -2,7 +2,7 @@
 const video = document.getElementById("video-feed");
 const canvas = document.getElementById("canvas");
 const captureBtn = document.getElementById("capture-btn");
-const flipBtn = document.getElementById("flip-btn"); // Tombol balik kamera
+const flipBtn = document.getElementById("flip-btn"); // Dapat 'null' jika tidak ada, TAPI ITU OKE
 const downloadLink = document.getElementById("download-link");
 const frame = document.querySelector(".frame-overlay");
 
@@ -11,7 +11,7 @@ let currentStream;
 // Variabel untuk melacak mode kamera (environment = belakang, user = depan)
 let currentFacingMode = "environment"; // Mulai dengan kamera belakang
 
-// 2. Fungsi untuk memulai kamera (DENGAN FALLBACK YANG DIPERBAIKI)
+// 2. Fungsi untuk memulai kamera (Dengan Fallback)
 async function startCamera(facingMode) {
   // Hentikan stream lama jika ada
   if (currentStream) {
@@ -28,7 +28,7 @@ async function startCamera(facingMode) {
   };
 
   try {
-    // Coba minta kamera yang diinginkan (misal: 'environment')
+    // Coba minta kamera yang diinginkan
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     video.srcObject = stream;
     currentStream = stream;
@@ -42,10 +42,9 @@ async function startCamera(facingMode) {
     }
 
   } catch (err) {
-    console.error("Error mengakses kamera: ", err);
+    console.error("Gagal mengakses kamera utama: ", err);
 
-    // --- LOGIKA FALLBACK (BACKUP PLAN) YANG HILANG ---
-    // Jika kamera yang diminta (misal: 'environment') gagal, coba kamera yang lain ('user')
+    // --- LOGIKA FALLBACK (BACKUP PLAN) ---
     const fallbackFacingMode = (facingMode === 'environment') ? 'user' : 'environment';
     constraints.video.facingMode = { ideal: fallbackFacingMode };
 
@@ -65,17 +64,23 @@ async function startCamera(facingMode) {
 
     } catch (fallbackErr) {
       // Jika keduanya gagal, baru tampilkan error
-      console.error("Error mengakses kamera fallback: ", fallbackErr);
+      console.error("Gagal mengakses kamera fallback: ", fallbackErr);
       alert(
         "Tidak bisa mengakses kamera. Cek izin browser Anda."
       );
     }
-    // --- AKHIR LOGIKA FALLBACK ---
   }
 }
 
-// 3. Logika saat tombol "Ambil Foto" diklik (Tetap sama, sudah 'cover')
+// 3. Logika saat tombol "Ambil Foto" diklik
+// Pastikan ini ditambahkan MESKIPUN tombol flip tidak ada
 captureBtn.addEventListener("click", () => {
+  // Pastikan video sudah siap
+  if (!video.videoWidth || video.videoWidth === 0) {
+    console.error("Video data belum siap.");
+    return; // Hentikan jika video belum ada datanya
+  }
+
   const canvasWidth = video.videoWidth;
   const canvasHeight = video.videoHeight;
   canvas.width = canvasWidth;
@@ -118,12 +123,16 @@ captureBtn.addEventListener("click", () => {
 });
 
 // 4. Logika saat tombol "Balik Kamera" diklik
-flipBtn.addEventListener("click", () => {
-  // Langsung ganti ke mode sebaliknya dari yang SEKARANG AKTIF
-  const newFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
-  startCamera(newFacingMode);
-});
+// --- INI PERBAIKANNYA ---
+// Hanya tambahkan listener JIKA tombol 'flipBtn' ada
+if (flipBtn) {
+  flipBtn.addEventListener("click", () => {
+    // Ganti ke mode sebaliknya dari yang SEKARANG AKTIF
+    const newFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
+    startCamera(newFacingMode);
+  });
+}
 
 // 5. Jalankan kamera saat halaman dimuat pertama kali
-// Mulai dengan 'environment' (belakang), tapi jika gagal, fungsi akan otomatis coba 'user'
+// (Script akan sampai di sini karena tidak crash di atas)
 startCamera("environment");
