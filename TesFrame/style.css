@@ -26,7 +26,7 @@ html {
 
 #video-feed {
   /* Memastikan video mengisi layar tanpa distorsi */
-  object-fit: cover;
+  object-fit: contain;
   z-index: 1; /* Video di belakang */
 }
 
@@ -123,6 +123,7 @@ html {
 #canvas {
   display: none;
 }
+
 
 
 
