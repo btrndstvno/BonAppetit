@@ -39,6 +39,7 @@ html {
 
 /* Tombol capture */
 /* TOMBOL CAPTURE (BULAT SEPERTI KAMERA) */
+/* TOMBOL CAPTURE (BULAT SEPERTI SHUTTER KAMERA) - SUDAH DIPERBAIKI */
 #capture-btn {
     position: absolute;
     bottom: 30px;
@@ -46,21 +47,40 @@ html {
     transform: translateX(-50%);
     z-index: 20;
 
-    /* Ini yang membuatnya bulat */
-    width: 70px;
-    height: 70px;
-    padding: 0;
-    
-    background-color: #fff;
-    border: 4px solid #fff; /* Memberi efek ring luar */
+    /* Ini adalah cincin luar (ring) */
+    width: 68px; /* Ukuran total */
+    height: 68px;
+    background-color: transparent; /* Latar transparan */
+    border: 4px solid #fff; /* Cincin putih */
     border-radius: 50%; /* Lingkaran */
     
     cursor: pointer;
     box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    
+    /* Pusatkan lingkaran dalam */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-#capture-btn:active {
-    transform: translateX(-50%) scale(0.95);
-    background-color: #f0f0f0;
+
+/* Ini adalah lingkaran solid di DALAM tombol */
+#capture-btn::before {
+    content: '';
+    width: 52px; /* Lebih kecil dari cincin luar */
+    height: 52px;
+    background-color: #fff; /* Lingkaran dalam putih solid */
+    border-radius: 50%;
+    transition: all 0.2s ease; /* Transisi untuk efek 'pressed' */
+    
+    /* INI ADALAH PERBAIKANNYA: */
+    /* Baris ini membuat klik bisa "tembus" ke tombol utama */
+    pointer-events: none; 
+}
+
+/* Efek saat tombol ditekan */
+#capture-btn:active::before {
+    /* Lingkaran dalam sedikit mengecil saat ditekan */
+    transform: scale(0.9);
 }
 
 
@@ -94,10 +114,16 @@ html {
     stroke: #ffffff; /* Mengatur warna ikon jadi putih */
 }
 
+/* CSS BARU UNTUK MEMATIKAN EFEK CERMIN */
+#video-feed.video-is-mirrored {
+    transform: scaleX(-1); /* Membalik video secara horizontal */
+}
+
 /* Canvas kita sembunyikan */
 #canvas {
   display: none;
 }
+
 
 
 
