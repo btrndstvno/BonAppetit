@@ -32,7 +32,7 @@ html {
 
 .frame-overlay {
   /* Pastikan frame tidak terdistorsi */
-  object-fit: cover;
+  object-fit: contain;
   z-index: 10; /* Frame di depan */
   pointer-events: none; /* Biar bisa klik "tembus" frame */
 }
@@ -123,6 +123,7 @@ html {
 #canvas {
   display: none;
 }
+
 
 
 
