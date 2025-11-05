@@ -26,13 +26,13 @@ html {
 
 #video-feed {
   /* Memastikan video mengisi layar tanpa distorsi */
-  object-fit: contain;
+  object-fit: cover;
   z-index: 1; /* Video di belakang */
 }
 
 .frame-overlay {
   /* Pastikan frame tidak terdistorsi */
-  object-fit: contain;
+  object-fit: cover;
   z-index: 10; /* Frame di depan */
   pointer-events: none; /* Biar bisa klik "tembus" frame */
 }
@@ -123,6 +123,7 @@ html {
 #canvas {
   display: none;
 }
+
 
 
 
