@@ -55,8 +55,23 @@ html {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
+#flip-btn {
+    position: absolute;
+    bottom: 30px; /* Samakan dengan tombol ambil foto */
+    right: 20px; /* Posisikan di kanan */
+    z-index: 20;
+    padding: 10px 15px;
+    font-size: 14px;
+    background-color: rgba(255, 255, 255, 0.8);
+    color: #333;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+}
+
 /* Canvas kita sembunyikan */
 #canvas {
   display: none;
 }
+
 
